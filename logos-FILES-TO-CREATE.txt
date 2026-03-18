@@ -1,0 +1,67 @@
+================================================================================
+  ЛОГОТИПЫ МОДЕЛЕЙ — КАКИЕ PNG ФАЙЛЫ НУЖНО СОЗДАТЬ
+================================================================================
+
+Положите PNG-файлы в папку:
+
+  d:\Download\final3 feature back\public\logos\
+
+(или  public/logos/  относительно корня проекта)
+
+Рекомендуемый размер: 64x64 px или 128x128 px (квадрат). Формат: PNG с прозрачностью.
+
+--------------------------------------------------------------------------------
+  СПИСОК ФАЙЛОВ (имя файла = имя в списке)
+--------------------------------------------------------------------------------
+
+  anthropic.png          — Anthropic (Claude)
+  google.png             — Google (Gemini)
+  openai.png             — OpenAI (GPT, DALL·E, Sora)
+  xai.png                — xAI (Grok)
+  meta.png               — Meta (Llama)
+  qwen.png               — Qwen (в т.ч. Wan)
+  deepseek.png           — DeepSeek
+  mistral.png            — Mistral
+  moonshot.png           — Moonshot AI (Kimi)
+  intel.png              — Intel
+  z-ai.png               — Z AI (GLM)
+  intelligence.png       — Intelligence.io (прочие модели)
+  black-forest-labs.png  — Black Forest Labs (FLUX)
+  bytedance.png          — Bytedance
+  wan.png                — WAN
+  minimax.png            — MiniMax (новые текстовые модели)
+  sber.png               — Sber (GigaChat 2 / 2 Pro / 2 Max)
+
+--------------------------------------------------------------------------------
+  ОПЦИОНАЛЬНО (fallback)
+--------------------------------------------------------------------------------
+
+  default.png            — если провайдер неизвестен (можно не создавать — покажется буква в круге)
+
+--------------------------------------------------------------------------------
+  ИТОГО: 17 файлов (16 основных + 1 опциональный)
+================================================================================
+
+После создания файлов структура должна быть такой:
+
+  public/
+    logos/
+      anthropic.png
+      google.png
+      openai.png
+      xai.png
+      meta.png
+      qwen.png
+      deepseek.png
+      mistral.png
+      moonshot.png
+      intel.png
+      z-ai.png
+      intelligence.png
+      black-forest-labs.png
+      bytedance.png
+      wan.png
+      minimax.png
+      sber.png
+
+Если какого-то файла нет, для этого провайдера будет показываться запасной вариант: первая буква названия в цветном круге.
