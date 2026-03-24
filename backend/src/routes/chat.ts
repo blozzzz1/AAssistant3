@@ -1,10 +1,28 @@
 import { Router, Response } from 'express';
+import { z } from 'zod';
 import { ChatService } from '../services/chatService';
 import { authenticateToken, AuthenticatedRequest } from '../middleware/auth';
 import { AdminService } from '../services/adminService';
 import { ChatSession } from '../types';
+import { validateRequest } from '../middleware/validate';
 
 const router = Router();
+const sessionIdParamsSchema = z.object({
+  id: z.string().uuid(),
+});
+
+const createSessionBodySchema = z.object({
+  title: z.string().trim().min(1).max(200),
+  selectedModel: z.string().trim().min(1).max(150),
+});
+
+const updateSessionBodySchema = z.object({
+  title: z.string().trim().min(1).max(200).optional(),
+  selectedModel: z.string().trim().min(1).max(150).optional(),
+  messages: z.array(z.unknown()).max(500).optional(),
+}).refine((payload) => Object.keys(payload).length > 0, {
+  message: 'At least one field must be provided',
+});
 
 // All routes require authentication
 router.use(authenticateToken);
@@ -32,7 +50,7 @@ router.get('/sessions', async (req: AuthenticatedRequest, res: Response) => {
 });
 
 // GET /api/chat/sessions/:id - Get specific session
-router.get('/sessions/:id', async (req: AuthenticatedRequest, res: Response) => {
+router.get('/sessions/:id', validateRequest({ params: sessionIdParamsSchema }), async (req: AuthenticatedRequest, res: Response) => {
   try {
     if (!req.userId) {
       res.status(401).json({ error: 'Unauthorized' });
@@ -55,7 +73,7 @@ router.get('/sessions/:id', async (req: AuthenticatedRequest, res: Response) => 
 });
 
 // POST /api/chat/sessions - Create new session
-router.post('/sessions', async (req: AuthenticatedRequest, res: Response) => {
+router.post('/sessions', validateRequest({ body: createSessionBodySchema }), async (req: AuthenticatedRequest, res: Response) => {
   try {
     if (!req.userId) {
       res.status(401).json({ error: 'Unauthorized' });
@@ -63,11 +81,6 @@ router.post('/sessions', async (req: AuthenticatedRequest, res: Response) => {
     }
 
     const { title, selectedModel } = req.body;
-
-    if (!title || !selectedModel) {
-      res.status(400).json({ error: 'Title and selectedModel are required' });
-      return;
-    }
 
     const { session, error } = await ChatService.createSession(
       req.userId,
@@ -102,7 +115,10 @@ router.post('/sessions', async (req: AuthenticatedRequest, res: Response) => {
 });
 
 // PUT /api/chat/sessions/:id - Update session
-router.put('/sessions/:id', async (req: AuthenticatedRequest, res: Response) => {
+router.put(
+  '/sessions/:id',
+  validateRequest({ params: sessionIdParamsSchema, body: updateSessionBodySchema }),
+  async (req: AuthenticatedRequest, res: Response) => {
   try {
     if (!req.userId) {
       res.status(401).json({ error: 'Unauthorized' });
@@ -157,7 +173,7 @@ router.put('/sessions/:id', async (req: AuthenticatedRequest, res: Response) => 
 });
 
 // DELETE /api/chat/sessions/:id - Delete session
-router.delete('/sessions/:id', async (req: AuthenticatedRequest, res: Response) => {
+router.delete('/sessions/:id', validateRequest({ params: sessionIdParamsSchema }), async (req: AuthenticatedRequest, res: Response) => {
   try {
     if (!req.userId) {
       res.status(401).json({ error: 'Unauthorized' });

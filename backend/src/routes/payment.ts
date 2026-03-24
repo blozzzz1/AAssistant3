@@ -1,4 +1,5 @@
 import { Router, Response } from 'express';
+import { z } from 'zod';
 import { authenticateToken, AuthenticatedRequest } from '../middleware/auth';
 import { PlanService, PlanType } from '../services/planService';
 import {
@@ -6,13 +7,18 @@ import {
   getTransactionsByUser,
   type PaymentMethod,
 } from '../services/paymentService';
+import { validateRequest } from '../middleware/validate';
 
 const router = Router();
+const createPaymentBodySchema = z.object({
+  plan: z.literal('premium'),
+  paymentMethod: z.enum(['card', 'sbp']),
+});
 
 router.use(authenticateToken);
 
 /** POST /api/payment — оформить оплату (карта или СБП), условно завершаем и выставляем премиум */
-router.post('/', async (req: AuthenticatedRequest, res: Response) => {
+router.post('/', validateRequest({ body: createPaymentBodySchema }), async (req: AuthenticatedRequest, res: Response) => {
   try {
     if (!req.userId) {
       res.status(401).json({ error: 'Не авторизован' });
@@ -20,15 +26,6 @@ router.post('/', async (req: AuthenticatedRequest, res: Response) => {
     }
 
     const { plan, paymentMethod } = req.body as { plan?: string; paymentMethod?: string };
-    if (plan !== 'premium') {
-      res.status(400).json({ error: 'Поддерживается только план premium' });
-      return;
-    }
-    if (paymentMethod !== 'card' && paymentMethod !== 'sbp') {
-      res.status(400).json({ error: 'Укажите способ оплаты: card или sbp' });
-      return;
-    }
-
     const { transaction, error: txError } = await createTransaction(
       req.userId,
       'premium',

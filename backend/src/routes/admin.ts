@@ -1,16 +1,63 @@
 import { Router, Response } from 'express';
+import { z } from 'zod';
 import { authenticateToken, AuthenticatedRequest } from '../middleware/auth';
 import { requireAdmin, requireSuperAdmin } from '../middleware/adminAuth';
 import { AdminService } from '../services/adminService';
+import { validateRequest } from '../middleware/validate';
 
 const router = Router();
+const pagingQuerySchema = z.object({
+  limit: z.coerce.number().int().min(1).max(200).optional(),
+  offset: z.coerce.number().int().min(0).optional(),
+});
+
+const userIdParamsSchema = z.object({
+  id: z.string().uuid(),
+});
+
+const adminUserIdParamsSchema = z.object({
+  userId: z.string().uuid(),
+});
+
+const blockUserBodySchema = z.object({
+  reason: z.string().trim().min(1).max(1000),
+  blockedUntil: z.string().datetime().optional(),
+});
+
+const updateSystemSettingBodySchema = z.object({
+  value: z.unknown(),
+});
+
+const updatePlanConfigBodySchema = z.object({
+  freeChatModelIds: z.array(z.string().trim().min(1).max(150)).optional(),
+  freeImageLimit: z.number().int().min(0).optional(),
+  freeVideoLimit: z.number().int().min(0).optional(),
+}).refine((payload) => Object.keys(payload).length > 0, {
+  message: 'At least one field must be provided',
+});
+
+const updateModelSettingBodySchema = z.object({
+  isEnabled: z.boolean(),
+  reason: z.string().max(1000).optional(),
+});
+
+const activityQuerySchema = z.object({
+  userId: z.string().uuid().optional(),
+  limit: z.coerce.number().int().min(1).max(200).optional(),
+  offset: z.coerce.number().int().min(0).optional(),
+});
+
+const addAdminBodySchema = z.object({
+  userId: z.string().uuid(),
+  role: z.enum(['admin', 'super_admin']),
+});
 
 // All routes require authentication and admin access
 router.use(authenticateToken);
 router.use(requireAdmin);
 
 // GET /api/admin/users - Get all users
-router.get('/users', async (req: AuthenticatedRequest, res: Response) => {
+router.get('/users', validateRequest({ query: pagingQuerySchema }), async (req: AuthenticatedRequest, res: Response) => {
   try {
     const limit = parseInt(req.query.limit as string) || 50;
     const offset = parseInt(req.query.offset as string) || 0;
@@ -30,7 +77,7 @@ router.get('/users', async (req: AuthenticatedRequest, res: Response) => {
 });
 
 // GET /api/admin/users/:id - Get user by ID
-router.get('/users/:id', async (req: AuthenticatedRequest, res: Response) => {
+router.get('/users/:id', validateRequest({ params: userIdParamsSchema }), async (req: AuthenticatedRequest, res: Response) => {
   try {
     const { id } = req.params;
     const { user, error } = await AdminService.getUserById(id);
@@ -53,7 +100,7 @@ router.get('/users/:id', async (req: AuthenticatedRequest, res: Response) => {
 });
 
 // POST /api/admin/users/:id/block - Block user
-router.post('/users/:id/block', async (req: AuthenticatedRequest, res: Response) => {
+router.post('/users/:id/block', validateRequest({ params: userIdParamsSchema, body: blockUserBodySchema }), async (req: AuthenticatedRequest, res: Response) => {
   try {
     if (!req.userId) {
       res.status(401).json({ error: 'Unauthorized' });
@@ -94,7 +141,7 @@ router.post('/users/:id/block', async (req: AuthenticatedRequest, res: Response)
 });
 
 // POST /api/admin/users/:id/unblock - Unblock user
-router.post('/users/:id/unblock', async (req: AuthenticatedRequest, res: Response) => {
+router.post('/users/:id/unblock', validateRequest({ params: userIdParamsSchema }), async (req: AuthenticatedRequest, res: Response) => {
   try {
     const { id } = req.params;
     const { error } = await AdminService.unblockUser(id);
@@ -140,7 +187,7 @@ router.get('/settings', async (req: AuthenticatedRequest, res: Response) => {
 });
 
 // PUT /api/admin/settings/:key - Update system setting
-router.put('/settings/:key', async (req: AuthenticatedRequest, res: Response) => {
+router.put('/settings/:key', validateRequest({ body: updateSystemSettingBodySchema }), async (req: AuthenticatedRequest, res: Response) => {
   try {
     if (!req.userId) {
       res.status(401).json({ error: 'Unauthorized' });
@@ -191,7 +238,7 @@ router.get('/plan-config', async (_req: AuthenticatedRequest, res: Response) => 
 });
 
 // PUT /api/admin/plan-config - Update plan config
-router.put('/plan-config', async (req: AuthenticatedRequest, res: Response) => {
+router.put('/plan-config', validateRequest({ body: updatePlanConfigBodySchema }), async (req: AuthenticatedRequest, res: Response) => {
   try {
     if (!req.userId) {
       res.status(401).json({ error: 'Unauthorized' });
@@ -235,7 +282,7 @@ router.get('/models', async (req: AuthenticatedRequest, res: Response) => {
 });
 
 // PUT /api/admin/models/* - Update model setting (modelId может содержать слэш, например moonshotai/Kimi-K2-Instruct-0905)
-router.put(/^\/models\/(.+)$/, async (req: AuthenticatedRequest, res: Response) => {
+router.put(/^\/models\/(.+)$/, validateRequest({ body: updateModelSettingBodySchema }), async (req: AuthenticatedRequest, res: Response) => {
   try {
     if (!req.userId) {
       res.status(401).json({ error: 'Unauthorized' });
@@ -280,7 +327,7 @@ router.put(/^\/models\/(.+)$/, async (req: AuthenticatedRequest, res: Response) 
 });
 
 // GET /api/admin/activity - Get activity logs
-router.get('/activity', async (req: AuthenticatedRequest, res: Response) => {
+router.get('/activity', validateRequest({ query: activityQuerySchema }), async (req: AuthenticatedRequest, res: Response) => {
   try {
     const userId = req.query.userId as string | undefined;
     const limit = parseInt(req.query.limit as string) || 100;
@@ -319,7 +366,7 @@ router.get('/admins', requireSuperAdmin, async (req: AuthenticatedRequest, res: 
 });
 
 // POST /api/admin/admins - Add admin
-router.post('/admins', requireSuperAdmin, async (req: AuthenticatedRequest, res: Response) => {
+router.post('/admins', requireSuperAdmin, validateRequest({ body: addAdminBodySchema }), async (req: AuthenticatedRequest, res: Response) => {
   try {
     if (!req.userId) {
       res.status(401).json({ error: 'Unauthorized' });
@@ -327,16 +374,6 @@ router.post('/admins', requireSuperAdmin, async (req: AuthenticatedRequest, res:
     }
 
     const { userId, role } = req.body;
-
-    if (!userId || !role) {
-      res.status(400).json({ error: 'userId and role are required' });
-      return;
-    }
-
-    if (role !== 'admin' && role !== 'super_admin') {
-      res.status(400).json({ error: 'Invalid role' });
-      return;
-    }
 
     const { error } = await AdminService.addAdmin(userId, role, req.userId);
 
@@ -364,7 +401,7 @@ router.post('/admins', requireSuperAdmin, async (req: AuthenticatedRequest, res:
 });
 
 // DELETE /api/admin/admins/:userId - Remove admin
-router.delete('/admins/:userId', requireSuperAdmin, async (req: AuthenticatedRequest, res: Response) => {
+router.delete('/admins/:userId', requireSuperAdmin, validateRequest({ params: adminUserIdParamsSchema }), async (req: AuthenticatedRequest, res: Response) => {
   try {
     const { userId } = req.params;
     const { error } = await AdminService.removeAdmin(userId);
