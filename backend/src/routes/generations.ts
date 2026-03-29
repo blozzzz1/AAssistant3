@@ -1,84 +1,14 @@
 import { Router, Response } from 'express';
-import { z } from 'zod';
 import { GenerationService } from '../services/generationService';
 import { StorageService } from '../services/storageService';
 import { PlanService } from '../services/planService';
 import { authenticateToken, AuthenticatedRequest } from '../middleware/auth';
 import { AdminService } from '../services/adminService';
-import { validateRequest } from '../middleware/validate';
 
 const router = Router();
-const idParamsSchema = z.object({
-  id: z.string().uuid(),
-});
-
-const listQuerySchema = z.object({
-  limit: z.coerce.number().int().min(1).max(100).optional(),
-  offset: z.coerce.number().int().min(0).optional(),
-});
-
-const createImageBodySchema = z.object({
-  model: z.string().trim().min(1).max(150),
-  prompt: z.string().trim().min(1).max(4000),
-  negativePrompt: z.string().max(2000).optional(),
-  quality: z.string().max(100).optional(),
-  size: z.string().max(50).optional(),
-  outputFormat: z.string().max(30).optional(),
-  numImages: z.number().int().min(1).max(10).optional(),
-  imageUrls: z.array(z.string().url()).max(10).optional(),
-  status: z.enum(['pending', 'processing', 'completed', 'failed']).optional(),
-  errorMessage: z.string().max(2000).optional(),
-});
-
-const updateImageBodySchema = z.object({
-  imageUrls: z.array(z.string().url()).max(10).optional(),
-  status: z.enum(['pending', 'processing', 'completed', 'failed']).optional(),
-  errorMessage: z.string().max(2000).optional(),
-  isPublic: z.boolean().optional(),
-}).refine((payload) => Object.keys(payload).length > 0, {
-  message: 'At least one field must be provided',
-});
-
-const createVideoBodySchema = z.object({
-  model: z.string().trim().min(1).max(150),
-  prompt: z.string().trim().min(1).max(4000),
-  negativePrompt: z.string().max(2000).optional(),
-  videoId: z.string().max(200).optional(),
-  videoUrl: z.string().url().optional(),
-  status: z.enum(['pending', 'processing', 'completed', 'failed', 'moderation_failed']).optional(),
-  errorMessage: z.string().max(2000).optional(),
-  aspectRatio: z.string().max(50).optional(),
-  duration: z.number().int().min(1).max(60).optional(),
-  quality: z.string().max(100).optional(),
-  motionMode: z.string().max(100).optional(),
-  style: z.string().max(100).optional(),
-  cameraMovement: z.string().max(100).optional(),
-  seed: z.number().int().optional(),
-  waterMark: z.boolean().optional(),
-  size: z.string().max(50).optional(),
-  seconds: z.number().int().min(1).max(60).optional(),
-});
-
-const updateVideoBodySchema = z.object({
-  videoId: z.string().max(200).optional(),
-  videoUrl: z.string().url().optional(),
-  status: z.enum(['pending', 'processing', 'completed', 'failed', 'moderation_failed']).optional(),
-  errorMessage: z.string().max(2000).optional(),
-  isPublic: z.boolean().optional(),
-}).refine((payload) => Object.keys(payload).length > 0, {
-  message: 'At least one field must be provided',
-});
-
-const uploadVideoBodySchema = z.object({
-  videoUrl: z.string().url().optional(),
-  videoId: z.string().max(200).optional(),
-  isAITunnel: z.boolean().optional(),
-}).refine((payload) => Boolean(payload.videoUrl || (payload.isAITunnel && payload.videoId)), {
-  message: 'videoUrl or (videoId and isAITunnel) is required',
-});
 
 // Public gallery: generations shared by users (no auth required). Query: limit, offset.
-router.get('/public', validateRequest({ query: listQuerySchema }), async (req, res: Response) => {
+router.get('/public', async (req, res: Response) => {
   try {
     const limit = req.query.limit != null ? Math.min(100, Math.max(1, Number(req.query.limit))) : undefined;
     const offset = req.query.offset != null ? Math.max(0, Number(req.query.offset)) : undefined;
@@ -101,7 +31,7 @@ router.use(authenticateToken);
 
 // Image Generation Routes
 // GET /api/generations/image - Get all user image generations
-router.get('/image', validateRequest({ query: listQuerySchema }), async (req: AuthenticatedRequest, res: Response) => {
+router.get('/image', async (req: AuthenticatedRequest, res: Response) => {
   try {
     if (!req.userId) {
       res.status(401).json({ error: 'Unauthorized' });
@@ -126,7 +56,7 @@ router.get('/image', validateRequest({ query: listQuerySchema }), async (req: Au
 });
 
 // POST /api/generations/image - Create new image generation
-router.post('/image', validateRequest({ body: createImageBodySchema }), async (req: AuthenticatedRequest, res: Response) => {
+router.post('/image', async (req: AuthenticatedRequest, res: Response) => {
   try {
     if (!req.userId) {
       res.status(401).json({ error: 'Unauthorized' });
@@ -160,6 +90,11 @@ router.post('/image', validateRequest({ body: createImageBodySchema }), async (r
       status,
       errorMessage,
     } = req.body;
+
+    if (!model || !prompt) {
+      res.status(400).json({ error: 'Model and prompt are required' });
+      return;
+    }
 
     const { generation, error } = await GenerationService.createImageGeneration(req.userId, {
       model,
@@ -198,7 +133,7 @@ router.post('/image', validateRequest({ body: createImageBodySchema }), async (r
 });
 
 // PUT /api/generations/image/:id - Update image generation
-router.put('/image/:id', validateRequest({ params: idParamsSchema, body: updateImageBodySchema }), async (req: AuthenticatedRequest, res: Response) => {
+router.put('/image/:id', async (req: AuthenticatedRequest, res: Response) => {
   try {
     if (!req.userId) {
       res.status(401).json({ error: 'Unauthorized' });
@@ -241,7 +176,7 @@ router.put('/image/:id', validateRequest({ params: idParamsSchema, body: updateI
 });
 
 // DELETE /api/generations/image/:id - Delete image generation (own only)
-router.delete('/image/:id', validateRequest({ params: idParamsSchema }), async (req: AuthenticatedRequest, res: Response) => {
+router.delete('/image/:id', async (req: AuthenticatedRequest, res: Response) => {
   try {
     if (!req.userId) {
       res.status(401).json({ error: 'Unauthorized' });
@@ -262,7 +197,7 @@ router.delete('/image/:id', validateRequest({ params: idParamsSchema }), async (
 
 // Video Generation Routes
 // GET /api/generations/video - Get all user video generations
-router.get('/video', validateRequest({ query: listQuerySchema }), async (req: AuthenticatedRequest, res: Response) => {
+router.get('/video', async (req: AuthenticatedRequest, res: Response) => {
   try {
     if (!req.userId) {
       res.status(401).json({ error: 'Unauthorized' });
@@ -287,7 +222,7 @@ router.get('/video', validateRequest({ query: listQuerySchema }), async (req: Au
 });
 
 // POST /api/generations/video - Create new video generation
-router.post('/video', validateRequest({ body: createVideoBodySchema }), async (req: AuthenticatedRequest, res: Response) => {
+router.post('/video', async (req: AuthenticatedRequest, res: Response) => {
   try {
     if (!req.userId) {
       res.status(401).json({ error: 'Unauthorized' });
@@ -328,6 +263,11 @@ router.post('/video', validateRequest({ body: createVideoBodySchema }), async (r
       size,
       seconds,
     } = req.body;
+
+    if (!model || !prompt) {
+      res.status(400).json({ error: 'Model and prompt are required' });
+      return;
+    }
 
     const { generation, error } = await GenerationService.createVideoGeneration(req.userId, {
       model,
@@ -373,7 +313,7 @@ router.post('/video', validateRequest({ body: createVideoBodySchema }), async (r
 });
 
 // PUT /api/generations/video/:id - Update video generation
-router.put('/video/:id', validateRequest({ params: idParamsSchema, body: updateVideoBodySchema }), async (req: AuthenticatedRequest, res: Response) => {
+router.put('/video/:id', async (req: AuthenticatedRequest, res: Response) => {
   try {
     if (!req.userId) {
       res.status(401).json({ error: 'Unauthorized' });
@@ -417,7 +357,7 @@ router.put('/video/:id', validateRequest({ params: idParamsSchema, body: updateV
 });
 
 // DELETE /api/generations/video/:id - Delete video generation (own only)
-router.delete('/video/:id', validateRequest({ params: idParamsSchema }), async (req: AuthenticatedRequest, res: Response) => {
+router.delete('/video/:id', async (req: AuthenticatedRequest, res: Response) => {
   try {
     if (!req.userId) {
       res.status(401).json({ error: 'Unauthorized' });
@@ -437,7 +377,7 @@ router.delete('/video/:id', validateRequest({ params: idParamsSchema }), async (
 });
 
 // POST /api/generations/video/:id/upload - Upload video to Supabase Storage
-router.post('/video/:id/upload', validateRequest({ params: idParamsSchema, body: uploadVideoBodySchema }), async (req: AuthenticatedRequest, res: Response) => {
+router.post('/video/:id/upload', async (req: AuthenticatedRequest, res: Response) => {
   try {
     if (!req.userId) {
       res.status(401).json({ error: 'Unauthorized' });
@@ -526,7 +466,7 @@ router.post('/video/:id/upload', validateRequest({ params: idParamsSchema, body:
 });
 
 // GET /api/generations/video/:id/video - Get signed URL for video playback (avoids 400 on public URL)
-router.get('/video/:id/video', validateRequest({ params: idParamsSchema }), async (req: AuthenticatedRequest, res: Response) => {
+router.get('/video/:id/video', async (req: AuthenticatedRequest, res: Response) => {
   try {
     if (!req.userId) {
       res.status(401).json({ error: 'Unauthorized' });

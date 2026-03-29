@@ -52,7 +52,7 @@ export const Sidebar: React.FC = () => {
   };
 
   return (
-    <aside className="sticky top-0 left-0 z-10 w-64 h-screen flex-shrink-0 flex flex-col bg-[#0d0d0f] border-r border-white/10 overflow-y-auto">
+    <aside className="sticky top-0 left-0 z-10 hidden h-screen w-64 flex-shrink-0 flex-col border-r border-white/10 bg-[#0d0d0f] overflow-y-auto lg:flex">
       {/* Logo */}
       <Link
         to="/"

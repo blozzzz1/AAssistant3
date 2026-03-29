@@ -11,7 +11,6 @@ import transactionsRoutes from './routes/transactions';
 import aiProxyRoutes from './routes/aiProxy';
 import { requestLogger, RequestWithId } from './middleware/requestLogger';
 import { appLogger } from './lib/logger';
-import { adminLimiter, aiLimiter, apiLimiter } from './middleware/rateLimit';
 
 dotenv.config();
 
@@ -19,10 +18,8 @@ const app = express();
 const PORT = process.env.PORT || 3001;
 const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:5173';
 
-// Trust exactly one proxy hop by default (safe for rate-limit keying by IP).
-// Override with TRUST_PROXY_HOPS in environments with a different proxy chain.
-const trustProxyHops = Number(process.env.TRUST_PROXY_HOPS ?? '1');
-app.set('trust proxy', Number.isFinite(trustProxyHops) && trustProxyHops >= 0 ? trustProxyHops : 1);
+// Trust proxy for accurate IP addresses (before requestLogger for correct IP)
+app.set('trust proxy', true);
 
 // Middleware
 app.use(cors({
@@ -34,7 +31,7 @@ app.use(cors({
 app.use(requestLogger);
 
 // AI proxy routes MUST be before express.json() so multipart body is not consumed
-app.use('/api/ai', aiLimiter, aiProxyRoutes);
+app.use('/api/ai', aiProxyRoutes);
 
 // Increase payload size limit for chat messages (default is 100kb, increase to 10mb)
 app.use(express.json({ limit: '10mb' }));
@@ -46,13 +43,13 @@ app.get('/health', (req, res) => {
 });
 
 // API routes
-app.use('/api/chat', apiLimiter, chatRoutes);
-app.use('/api/generations', apiLimiter, generationsRoutes);
-app.use('/api/user', apiLimiter, userRoutes);
-app.use('/api/settings', apiLimiter, settingsRoutes);
-app.use('/api/admin', adminLimiter, adminRoutes);
-app.use('/api/payment', apiLimiter, paymentRoutes);
-app.use('/api/transactions', apiLimiter, transactionsRoutes);
+app.use('/api/chat', chatRoutes);
+app.use('/api/generations', generationsRoutes);
+app.use('/api/user', userRoutes);
+app.use('/api/settings', settingsRoutes);
+app.use('/api/admin', adminRoutes);
+app.use('/api/payment', paymentRoutes);
+app.use('/api/transactions', transactionsRoutes);
 
 // Error handling middleware
 app.use((err: Error, req: express.Request, res: express.Response, _next: express.NextFunction) => {

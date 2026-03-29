@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { AI_MODELS } from '../constants/models';
 import { ModelCard } from '../components/ModelCard';
-import FaultyTerminal from '../components/FaultyTerminal';
+import PixelTrail from '../components/PixelTrail/PixelTrail';
 import { useAuth } from '../contexts/AuthContext';
 
 export const HomePage: React.FC = () => {
@@ -168,25 +168,16 @@ export const HomePage: React.FC = () => {
 
   return (
     <div className="relative min-h-screen bg-background-darker">
-      <div className="fixed inset-0 z-0">
-        <FaultyTerminal
-          scale={1.5}
-          gridMul={[2, 1]}
-          digitSize={1.2}
-          timeScale={0.5}
-          pause={false}
-          scanlineIntensity={0.5}
-          glitchAmount={1}
-          flickerAmount={1}
-          noiseAmp={1}
-          chromaticAberration={0}
-          dither={0}
-          curvature={0.1}
-          tint="#A78BFA"
-          mouseReact
-          mouseStrength={0.5}
-          pageLoadAnimation
-          brightness={0.6}
+      <div className="fixed inset-0 z-0 overflow-hidden">
+        <PixelTrail
+          gridSize={50}
+          trailSize={0.1}
+          maxAge={250}
+          interpolate={5}
+          color="#8b5cf6"
+          gooeyFilter={{ id: 'custom-goo-filter', strength: 2 }}
+          gooeyEnabled
+          gooStrength={2}
         />
       </div>
       {/* Hero Section */}
@@ -392,7 +383,7 @@ export const HomePage: React.FC = () => {
             ].map((item, index) => (
               <motion.div 
                 key={index} 
-                className="relative flex-1 max-w-[280px]"
+                className="relative w-full md:w-auto md:flex-1 md:max-w-[280px]"
                 variants={scaleIn}
               >
                 <div className="bg-background-card border border-primary-900/30 rounded-xl p-6 text-center h-full flex flex-col">

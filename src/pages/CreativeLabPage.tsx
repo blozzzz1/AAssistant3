@@ -28,6 +28,7 @@ import {
 import { ModelLogo } from '../components/ModelLogo';
 import { GalleryCardSkeleton } from '../components/GalleryCardSkeleton';
 import { PulsingOrbsBackground } from '../components/PulsingOrbsBackground';
+import { FIXED_ABOVE_MOBILE_TAB_BAR_CLASS } from '../constants/mobileNavLayout';
 
 /** Resolves Supabase video URL to signed URL and renders <video>. */
 const SupabaseVideo: React.FC<{
@@ -683,7 +684,7 @@ export const CreativeLabPage: React.FC = () => {
     <div className="relative min-h-full flex flex-col bg-[#0d0d0f]">
       <PulsingOrbsBackground />
       {/* Gallery area — отступ снизу под фиксированную панель */}
-      <div className="relative z-10 flex-1 overflow-auto p-6 pb-72">
+      <div className="relative z-10 flex-1 overflow-auto p-4 pb-72 sm:p-6 max-lg:pb-[calc(18rem+4.25rem+env(safe-area-inset-bottom,0px))]">
         <div className="max-w-6xl mx-auto">
           {galleryLoading ? (
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
@@ -728,7 +729,9 @@ export const CreativeLabPage: React.FC = () => {
       </div>
 
       {/* Bottom bar — фиксирована внизу экрана; pointer-events-none на обёртке, чтобы не перекрывать сайдбар (тема, аккаунт) */}
-      <div className="fixed bottom-0 left-0 right-0 z-10 py-5 px-4 pointer-events-none">
+      <div
+        className={`fixed left-0 right-0 z-10 px-4 py-5 pointer-events-none ${FIXED_ABOVE_MOBILE_TAB_BAR_CLASS}`}
+      >
         <div className="max-w-4xl mx-auto rounded-t-[2rem] bg-black/90 border border-white/10 border-b-0 overflow-hidden shadow-[0_-4px_24px_rgba(0,0,0,0.4)] pointer-events-auto">
           <div className="space-y-3 pt-4 px-4 pb-5">
           {/* Осталось бесплатных генераций на сегодня */}

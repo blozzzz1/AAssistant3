@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Send, Bot, User, Trash2, Mic, Square, AlertCircle, Image as ImageIcon, FileText, X, Video, Music } from 'lucide-react';
+import { Send, Bot, User, Trash2, Mic, Square, AlertCircle, Image as ImageIcon, FileText, X, Video, Music, PanelLeft } from 'lucide-react';
 import { Message, ImageAttachment, FileAttachment, VideoAttachment, AudioAttachment } from '../types';
 import { VoiceVisualizer } from './VoiceVisualizer.tsx';
 import { ImageUpload } from './ImageUpload';
@@ -37,6 +37,7 @@ interface ChatInterfaceProps {
   onSendVoiceMessage: () => void;
   onSetSpeechTranscript: (transcript: string) => void;
   onClearSpeechError: () => void;
+  onOpenSessionsDrawer?: () => void;
 }
 
 export const ChatInterface: React.FC<ChatInterfaceProps> = ({
@@ -54,7 +55,8 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
   onStartListening,
   onStopListening,
   onSetSpeechTranscript,
-  onClearSpeechError
+  onClearSpeechError,
+  onOpenSessionsDrawer
 }) => {
   const [inputMessage, setInputMessage] = useState('');
   const [showPermissionRequest, setShowPermissionRequest] = useState(false);
@@ -372,9 +374,19 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
   return (
     <div className="flex flex-col h-full bg-background-darker">
       {/* Header */}
-      <div className="border-b border-primary-900/30 h-[87px] py-5 px-4 bg-background-dark/50 backdrop-blur-sm">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
+      <div className="shrink-0 border-b border-primary-900/30 bg-background-dark/50 px-3 py-4 backdrop-blur-sm sm:px-4 sm:py-5 min-h-[72px] sm:min-h-[87px]">
+        <div className="flex items-center justify-between gap-2">
+          <div className="flex min-w-0 flex-1 items-center gap-2 sm:gap-3">
+            {onOpenSessionsDrawer && (
+              <button
+                type="button"
+                onClick={onOpenSessionsDrawer}
+                className="shrink-0 rounded-lg p-2 text-gray-400 hover:bg-background-hover hover:text-white lg:hidden"
+                aria-label="Список чатов"
+              >
+                <PanelLeft className="h-5 w-5" />
+              </button>
+            )}
             {selectedModelProvider ? (
               <ModelLogo providerName={selectedModelProvider} size="lg" />
             ) : (
@@ -382,9 +394,9 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
                 <Bot className="w-6 h-6 text-white" />
               </div>
             )}
-            <div>
-              <h2 className="font-semibold text-white leading-tight">AI помощник</h2>
-              <p className="text-sm text-gray-400 leading-tight">Используется {selectedModelName}</p>
+            <div className="min-w-0">
+              <h2 className="truncate font-semibold leading-tight text-white">AI помощник</h2>
+              <p className="truncate text-xs leading-tight text-gray-400 sm:text-sm">Используется {selectedModelName}</p>
             </div>
           </div>
           <div className="flex items-center gap-2">

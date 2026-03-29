@@ -1,17 +1,8 @@
 import { Router, Response } from 'express';
-import { z } from 'zod';
 import { PlanService, PlanType } from '../services/planService';
 import { authenticateToken, AuthenticatedRequest } from '../middleware/auth';
-import { validateRequest } from '../middleware/validate';
 
 const router = Router();
-const canUseModelQuerySchema = z.object({
-  modelId: z.string().trim().min(1).max(150),
-});
-
-const updatePlanBodySchema = z.object({
-  plan: z.enum(['free', 'premium']),
-});
 
 router.use(authenticateToken);
 
@@ -57,13 +48,17 @@ router.get('/plan', async (req: AuthenticatedRequest, res: Response) => {
 });
 
 /** GET /api/user/can-use-chat-model?modelId=... — доступна ли модель чата по плану */
-router.get('/can-use-chat-model', validateRequest({ query: canUseModelQuerySchema }), async (req: AuthenticatedRequest, res: Response) => {
+router.get('/can-use-chat-model', async (req: AuthenticatedRequest, res: Response) => {
   try {
     if (!req.userId) {
       res.status(401).json({ error: 'Unauthorized' });
       return;
     }
     const modelId = req.query.modelId as string;
+    if (!modelId) {
+      res.status(400).json({ error: 'modelId is required' });
+      return;
+    }
     const { allowed, error } = await PlanService.canUseChatModel(req.userId, modelId);
     if (error) {
       res.status(500).json({ error });
@@ -77,7 +72,7 @@ router.get('/can-use-chat-model', validateRequest({ query: canUseModelQuerySchem
 });
 
 /** PUT /api/user/plan — смена плана (заглушка оплаты: можно выставить premium) */
-router.put('/plan', validateRequest({ body: updatePlanBodySchema }), async (req: AuthenticatedRequest, res: Response) => {
+router.put('/plan', async (req: AuthenticatedRequest, res: Response) => {
   try {
     if (!req.userId) {
       res.status(401).json({ error: 'Unauthorized' });
@@ -85,6 +80,11 @@ router.put('/plan', validateRequest({ body: updatePlanBodySchema }), async (req:
     }
 
     const { plan } = req.body as { plan?: string };
+    if (plan !== 'free' && plan !== 'premium') {
+      res.status(400).json({ error: 'plan must be "free" or "premium"' });
+      return;
+    }
+
     const { error } = await PlanService.setPlan(req.userId, plan as PlanType);
     if (error) {
       res.status(500).json({ error });

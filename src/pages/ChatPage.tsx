@@ -21,6 +21,7 @@ export const ChatPage: React.FC = () => {
   const freeIds = planConfigLoading ? [] : freeChatModelIds;
   const [showModelSelector, setShowModelSelector] = useState(false);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+  const [mobileChatDrawerOpen, setMobileChatDrawerOpen] = useState(false);
   const processedParamsRef = useRef<string | null>(null);
   const pendingCreationRef = useRef(false);
 
@@ -127,6 +128,11 @@ export const ChatPage: React.FC = () => {
     setIsSidebarCollapsed(!isSidebarCollapsed);
   };
 
+  const openMobileChatDrawer = () => {
+    setIsSidebarCollapsed(false);
+    setMobileChatDrawerOpen(true);
+  };
+
   if (!showModelSelector && isSyncing && chatSessions.length === 0) {
     return <ChatPageSkeleton />;
   }
@@ -154,9 +160,16 @@ export const ChatPage: React.FC = () => {
   }
 
   return (
-    <div className="relative h-screen bg-background-darker flex">
+    <div className="relative flex h-full min-h-0 flex-1 flex-col bg-background-darker lg:min-h-screen">
       <PulsingOrbsBackground />
-      <div className="relative z-10 flex flex-1 min-w-0">
+      {mobileChatDrawerOpen && (
+        <div
+          className="fixed inset-0 z-[45] bg-black/50 lg:hidden"
+          aria-hidden
+          onClick={() => setMobileChatDrawerOpen(false)}
+        />
+      )}
+      <div className="relative z-10 flex min-h-0 min-w-0 flex-1">
         <ChatSidebar
           sessions={chatSessions}
           currentSessionId={currentSessionId}
@@ -169,8 +182,10 @@ export const ChatPage: React.FC = () => {
           isCollapsed={isSidebarCollapsed}
           onToggleCollapse={toggleSidebar}
           isSyncing={isSyncing}
+          mobileDrawerOpen={mobileChatDrawerOpen}
+          onCloseMobileDrawer={() => setMobileChatDrawerOpen(false)}
         />
-        <div className="flex-1 flex flex-col">
+        <div className="flex min-h-0 min-w-0 flex-1 flex-col">
         <ChatInterface
           messages={messages}
           onSendMessage={sendMessage}
@@ -188,6 +203,7 @@ export const ChatPage: React.FC = () => {
           onSendVoiceMessage={sendVoiceMessage}
           onSetSpeechTranscript={setSpeechTranscript}
           onClearSpeechError={clearSpeechError}
+          onOpenSessionsDrawer={openMobileChatDrawer}
         />
         </div>
       </div>
