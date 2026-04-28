@@ -130,38 +130,7 @@ cd backend
 npm install
 cd ..
 ```
-
-4. **Настройте Supabase:**
-   - Создайте проект на [supabase.com](https://supabase.com)
-   - Отключите подтверждение email (Authentication → Providers → Email → Confirm email: OFF)
-   - Выполните SQL скрипты в Supabase SQL Editor:
-     - `supabase-setup.sql` — основная настройка
-     - `generations-setup.sql` — таблицы для генераций
-     - `admin-setup.sql` — административная панель
-     - `backend-sql-functions.sql` — функции для бэкенда
-     - `generations-sql-functions.sql` — функции для генераций
-
-5. **Настройте переменные окружения:**
-
-   **Backend** (создайте `backend/.env`):
-   ```env
-   SUPABASE_URL=https://your-project.supabase.co
-   SUPABASE_SERVICE_ROLE_KEY=your_service_role_key
-   PORT=3001
-   NODE_ENV=development
-   FRONTEND_URL=http://localhost:5173
-   ```
-
-   **Frontend** (создайте `.env` в корне проекта):
-   ```env
-   VITE_SUPABASE_URL=https://your-project.supabase.co
-   VITE_SUPABASE_ANON_KEY=your_anon_key
-   VITE_AI_API_KEY=your_intelligence_io_key
-   VITE_AITUNNEL_API_KEY=your_aitunnel_key
-   VITE_API_BASE_URL=http://localhost:3001
-   ```
-
-6. **Запустите приложение:**
+4. **Запустите приложение:**
 
    **Терминал 1 — Backend:**
    ```bash
@@ -174,7 +143,7 @@ cd ..
    npm run dev
    ```
 
-7. **Откройте браузер:**
+5. **Откройте браузер:**
    - Frontend: http://localhost:5173
    - Backend API: http://localhost:3001
 
@@ -261,46 +230,6 @@ final3-feature-back/
 ├── tailwind.config.js
 └── tsconfig.json
 ```
-
----
-
-## ⚙️ Настройка
-
-### Создание супер-администратора
-
-После регистрации пользователя выполните SQL запрос в Supabase SQL Editor:
-
-```sql
--- Замените 'user-uuid' на UUID вашего пользователя
-INSERT INTO public.admins (user_id, role, created_by, updated_at)
-VALUES ('user-uuid', 'super_admin', 'user-uuid', NOW())
-ON CONFLICT (user_id) 
-DO UPDATE SET role = 'super_admin', updated_at = NOW();
-```
-
-Или используйте готовый скрипт `create-super-admin.sql`, заменив UUID.
-
-### Настройка API ключей
-
-API ключи настраиваются в `.env` файле фронтенда:
-
-- **VITE_AI_API_KEY** — используется для всех AI чатов (Intelligence.io)
-- **VITE_PIXVERSE_API_KEY** — для модели PixVerse (генерация видео)
-- **VITE_AITUNNEL_API_KEY** — для моделей Sora 2, Sora 2 Pro, Wan 2.5
-
-**Важно:** Эти ключи используются всеми пользователями платформы. Для продакшена рекомендуется настроить rate limiting и мониторинг использования.
-
-### Настройка Supabase Storage
-
-Для хранения видео необходимо создать bucket в Supabase Storage:
-
-1. Перейдите в Supabase Dashboard → Storage
-2. Создайте bucket с именем `videos`
-3. Установите публичный доступ (если нужно)
-4. Или используйте автоматическое создание через StorageService
-
----
-
 ## 📚 Документация
 
 ### Основная документация:
@@ -434,38 +363,6 @@ npm run type-check   # Проверка типов
 
 ---
 
-## 🐛 Устранение неполадок
-
-### Ошибка подключения к Supabase
-
-1. Проверьте `.env` файлы (фронтенд и бэкенд)
-2. Убедитесь, что URL и ключи скопированы полностью
-3. Проверьте, что проект Supabase активен
-
-### Ошибка "Email not confirmed"
-
-1. Отключите подтверждение email в Supabase Dashboard
-2. Или проверьте почту и подтвердите email
-
-### Чаты не сохраняются
-
-1. Убедитесь, что бэкенд запущен
-2. Проверьте `VITE_API_BASE_URL` в `.env`
-3. Проверьте выполнение SQL скриптов в Supabase
-
-### CORS ошибки
-
-1. Проверьте `FRONTEND_URL` в `backend/.env`
-2. Убедитесь, что URL совпадает с адресом фронтенда
-
-### Ошибки при генерации
-
-1. Проверьте API ключи в `.env`
-2. Убедитесь, что ключи валидны и не истекли
-3. Проверьте лимиты API провайдеров
-
----
-
 ## 📝 Changelog
 
 ### Версия 1.0.0
@@ -484,53 +381,3 @@ npm run type-check   # Проверка типов
 
 ---
 
-## 🤝 Вклад в проект
-
-Мы приветствуем вклад в развитие проекта! Пожалуйста:
-
-1. Создайте fork проекта
-2. Создайте ветку для новой функции (`git checkout -b feature/AmazingFeature`)
-3. Закоммитьте изменения (`git commit -m 'Add some AmazingFeature'`)
-4. Запушьте в ветку (`git push origin feature/AmazingFeature`)
-5. Откройте Pull Request
-
----
-
-## 📄 Лицензия
-
-Этот проект распространяется под лицензией MIT. См. файл `LICENSE` для подробностей.
-
----
-
-## 👨‍💻 Авторы
-
-- Разработка и дизайн: [Ваше имя/команда]
-
----
-
-## 🙏 Благодарности
-
-- [Supabase](https://supabase.com) — за отличную платформу для БД и аутентификации
-- [Intelligence.io](https://intelligence.io) — за API для AI моделей
-- [AITunnel](https://aitunnel.com) — за API для моделей Sora и Wan
-- Всем контрибьюторам проекта
-
----
-
-## 📞 Поддержка
-
-Если у вас возникли вопросы или проблемы:
-
-1. Проверьте [документацию](#-документация)
-2. Изучите [раздел устранения неполадок](#-устранение-неполадок)
-3. Создайте Issue в репозитории
-
----
-
-<div align="center">
-
-**Сделано с ❤️ для сообщества разработчиков**
-
-⭐ Если проект вам понравился, поставьте звезду!
-
-</div>
